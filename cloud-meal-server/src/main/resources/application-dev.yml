@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/cloud_meal?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${MYSQL_USERNAME:cloud_meal}
+    password: ${MYSQL_PASSWORD:cloud_meal_dev}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:cloud_meal}
+    password: ${RABBITMQ_PASSWORD:cloud_meal_dev}
+  cache:
+    type: redis
+
+logging:
+  level:
+    com.cloudmeal: debug

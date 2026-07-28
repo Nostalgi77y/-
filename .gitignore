@@ -1,0 +1,17 @@
+.idea/
+.vscode/
+*.iml
+*.log
+.env
+.env.*
+!.env.example
+target/
+node_modules/
+dist/
+unpackage/
+coverage/
+*.tsbuildinfo
+cloud-meal-admin/src/**/*.js
+.DS_Store
+Thumbs.db
+deploy/data/

@@ -1,0 +1,18 @@
+{
+  "pages": [
+    { "path": "pages/menu/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/cart/index", "style": { "navigationBarTitleText": "购物车" } },
+    { "path": "pages/order/index", "style": { "navigationBarTitleText": "我的订单" } },
+    { "path": "pages/mine/index", "style": { "navigationBarTitleText": "个人中心" } }
+  ],
+  "tabBar": {
+    "color": "#7a837f", "selectedColor": "#146c4b", "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/menu/index", "text": "点餐" },
+      { "pagePath": "pages/cart/index", "text": "购物车" },
+      { "pagePath": "pages/order/index", "text": "订单" },
+      { "pagePath": "pages/mine/index", "text": "我的" }
+    ]
+  },
+  "globalStyle": { "navigationBarTextStyle": "black", "navigationBarTitleText": "云膳外卖", "navigationBarBackgroundColor": "#ffffff", "backgroundColor": "#f6f7f5" }
+}

@@ -1,0 +1,37 @@
+services:
+  mysql:
+    extends:
+      file: docker-compose.yml
+      service: mysql
+  redis:
+    extends:
+      file: docker-compose.yml
+      service: redis
+  rabbitmq:
+    extends:
+      file: docker-compose.yml
+      service: rabbitmq
+  minio:
+    extends:
+      file: docker-compose.yml
+      service: minio
+  server:
+    build: ../cloud-meal-server
+    environment:
+      MYSQL_URL: jdbc:mysql://mysql:3306/cloud_meal?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      MYSQL_USERNAME: cloud_meal
+      MYSQL_PASSWORD: cloud_meal_dev
+      REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: cloud_meal
+      RABBITMQ_PASSWORD: cloud_meal_dev
+      JWT_SECRET: change-this-production-secret-with-at-least-32-characters
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_started }
+    ports: ["8080:8080"]
+  admin:
+    build: ../cloud-meal-admin
+    depends_on: [server]
+    ports: ["80:80"]
