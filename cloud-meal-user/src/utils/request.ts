@@ -1,6 +1,7 @@
 import type { ApiResponse } from '@/types'
 
-const BASE_URL = import.meta.env.DEV ? 'http://localhost:8080/api' : 'https://api.example.com/api'
+// 本地构建默认连接电脑上的 Docker 后端；发布前通过 VITE_API_BASE_URL 替换为备案的 HTTPS 域名。
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
 
 export function request<T>(options: UniApp.RequestOptions) {
   return new Promise<T>((resolve, reject) => {
