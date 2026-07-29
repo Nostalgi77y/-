@@ -20,6 +20,7 @@ import com.cloudmeal.user.entity.AddressBook;
 import com.cloudmeal.user.mapper.AddressBookMapper;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -39,13 +40,16 @@ public class OrderService {
     private final AddressBookMapper addressMapper;
     private final RabbitTemplate rabbitTemplate;
     private final OrderNotificationHandler notifier;
+    private final boolean messagingEnabled;
 
     public OrderService(OrderMapper orderMapper, OrderDetailMapper detailMapper, ShoppingCartMapper cartMapper,
                         DishMapper dishMapper, AddressBookMapper addressMapper, RabbitTemplate rabbitTemplate,
-                        OrderNotificationHandler notifier) {
+                        OrderNotificationHandler notifier,
+                        @Value("${cloud-meal.messaging.enabled:true}") boolean messagingEnabled) {
         this.orderMapper = orderMapper; this.detailMapper = detailMapper; this.cartMapper = cartMapper;
         this.dishMapper = dishMapper; this.addressMapper = addressMapper; this.rabbitTemplate = rabbitTemplate;
         this.notifier = notifier;
+        this.messagingEnabled = messagingEnabled;
     }
 
     @Transactional
@@ -92,7 +96,9 @@ public class OrderService {
             detail.setCreatedTime(LocalDateTime.now()); detailMapper.insert(detail);
         }
         cartMapper.delete(Wrappers.<ShoppingCart>lambdaQuery().eq(ShoppingCart::getUserId, userId));
-        rabbitTemplate.convertAndSend(OrderMessageConfig.DELAY_EXCHANGE, "delay", order.getId().toString());
+        if (messagingEnabled) {
+            rabbitTemplate.convertAndSend(OrderMessageConfig.DELAY_EXCHANGE, "delay", order.getId().toString());
+        }
         notifier.broadcast("ORDER_CREATED", order.getId(), "收到新订单");
         return toVO(order, details(order.getId()));
     }
