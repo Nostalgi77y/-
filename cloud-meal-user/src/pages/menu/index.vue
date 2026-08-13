@@ -1,14 +1,66 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { request } from '@/utils/request'
+import { request, resolveAssetUrl } from '@/utils/request'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import type { Category, Dish } from '@/types'
-const categories=ref<Category[]>([]);const dishes=ref<Dish[]>([]);const active=ref<string>();const cart=useCartStore();const user=useUserStore()
-async function loadCategories(){categories.value=await request<Category[]>({url:'/user/categories',method:'GET'});if(categories.value.length)selectCategory(categories.value[0].id)}
-async function selectCategory(id:string){active.value=id;dishes.value=await request<Dish[]>({url:`/user/dishes?categoryId=${id}`,method:'GET'})}
-async function add(id:string){if(!user.isLoggedIn)await user.demoLogin();await cart.add(id);uni.showToast({title:'已加入购物车'})}
+
+const categories = ref<Category[]>([])
+const dishes = ref<Dish[]>([])
+const active = ref<string>()
+const addingId = ref<string>()
+const cart = useCartStore()
+const user = useUserStore()
+
+async function loadCategories() {
+  categories.value = await request<Category[]>({ url: '/user/categories', method: 'GET' })
+  if (categories.value.length) await selectCategory(categories.value[0].id)
+}
+
+async function selectCategory(id: string) {
+  active.value = id
+  dishes.value = await request<Dish[]>({ url: `/user/dishes?categoryId=${id}`, method: 'GET' })
+}
+
+async function add(id: string) {
+  if (addingId.value) return
+  addingId.value = id
+  try {
+    if (!user.isLoggedIn) await user.demoLogin()
+    try {
+      await cart.add(id)
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.includes('请先登录')) throw error
+      user.logout()
+      await user.demoLogin()
+      await cart.add(id)
+    }
+    uni.showToast({ title: '已加入购物车' })
+  } finally { addingId.value = undefined }
+}
+
 onMounted(loadCategories)
 </script>
-<template><view class="page"><view class="hero"><view class="hero-top"><view><text class="eyebrow">CLOUD MEAL</text><text class="title">今天想吃点什么？</text></view><view class="avatar">膳</view></view><view class="notice">营业中 · 预计 30 分钟送达</view></view><view class="content"><scroll-view class="categories" scroll-y><view v-for="item in categories" :key="item.id" class="category" :class="{active:item.id===active}" @click="selectCategory(item.id)">{{item.name}}</view></scroll-view><scroll-view class="dishes" scroll-y><view v-for="dish in dishes" :key="dish.id" class="dish"><view class="dish-image"><image v-if="dish.image" :src="dish.image" mode="aspectFill"/><text v-else>云膳</text></view><view class="dish-info"><text class="dish-name">{{dish.name}}</text><text class="dish-desc">{{dish.description}}</text><view class="dish-bottom"><text class="price">¥{{dish.price}}</text><button class="add" @click="add(dish.id)">+</button></view></view></view></scroll-view></view><view v-if="cart.totalQuantity" class="cart-bar" @click="uni.switchTab({url:'/pages/cart/index'})"><view><text class="cart-count">{{cart.totalQuantity}}</text><text>已选商品</text></view><text class="cart-total">¥{{cart.totalPrice.toFixed(2)}}　去结算</text></view></view></template>
-<style scoped lang="scss">.page{min-height:100vh}.hero{padding:90rpx 34rpx 36rpx;background:#123c2f;color:#fff;border-radius:0 0 40rpx 40rpx}.hero-top{display:flex;justify-content:space-between;align-items:center}.eyebrow,.title{display:block}.eyebrow{font-size:20rpx;letter-spacing:6rpx;color:#e5bd5a}.title{font-size:44rpx;font-weight:700;margin-top:14rpx}.avatar{width:72rpx;height:72rpx;border-radius:24rpx;background:#e5bd5a;color:#123c2f;display:grid;place-items:center;font-weight:700}.notice{margin-top:32rpx;background:rgba(255,255,255,.1);border-radius:18rpx;padding:18rpx 22rpx;font-size:24rpx}.content{display:flex;height:calc(100vh - 330rpx);padding-top:20rpx}.categories{width:190rpx;background:#eef1ee}.category{padding:30rpx 18rpx;color:#68746e;font-size:26rpx}.category.active{background:#fff;color:#123c2f;font-weight:700;border-left:8rpx solid #e5bd5a}.dishes{flex:1;background:#fff;padding:0 22rpx}.dish{display:flex;padding:24rpx 0;border-bottom:1rpx solid #edf0ee}.dish-image{width:176rpx;height:176rpx;border-radius:24rpx;background:#e7eee9;display:grid;place-items:center;color:#547064;overflow:hidden}.dish-image image{width:100%;height:100%}.dish-info{flex:1;padding-left:20rpx;min-width:0}.dish-name{display:block;font-weight:700;font-size:30rpx}.dish-desc{display:block;color:#8a938e;font-size:22rpx;margin-top:12rpx;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dish-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:32rpx}.price{color:#d64d37;font-size:32rpx;font-weight:700}.add{margin:0;width:56rpx;height:56rpx;line-height:52rpx;border-radius:50%;background:#123c2f;color:#fff;padding:0}.cart-bar{position:fixed;left:30rpx;right:30rpx;bottom:120rpx;background:#17241f;color:#fff;border-radius:34rpx;padding:24rpx 30rpx;display:flex;justify-content:space-between;box-shadow:0 16rpx 40rpx rgba(0,0,0,.22)}.cart-count{background:#e5bd5a;color:#17241f;border-radius:50%;padding:4rpx 12rpx;margin-right:14rpx}.cart-total{color:#f4ca65;font-weight:700}</style>
+
+<template>
+  <view class="page">
+    <view class="hero">
+      <view class="hero-top"><view><text class="eyebrow">CLOUD MEAL</text><text class="title">今天想吃点什么？</text></view><view class="avatar">膳</view></view>
+      <view class="notice">营业中 · 预计 30 分钟送达</view>
+    </view>
+    <view class="content">
+      <scroll-view class="categories" scroll-y><view v-for="item in categories" :key="item.id" class="category" :class="{active:item.id===active}" @click="selectCategory(item.id)">{{ item.name }}</view></scroll-view>
+      <scroll-view class="dishes" scroll-y>
+        <view v-for="dish in dishes" :key="dish.id" class="dish">
+          <view class="dish-image"><image v-if="dish.image" :src="resolveAssetUrl(dish.image)" mode="aspectFill" /><text v-else>云膳</text></view>
+          <view class="dish-info"><text class="dish-name">{{ dish.name }}</text><text class="dish-desc">{{ dish.description }}</text><view class="dish-bottom"><text class="price">¥{{ dish.price }}</text><button class="add" :loading="addingId===dish.id" :disabled="!!addingId" @click.stop="add(dish.id)">+</button></view></view>
+        </view>
+      </scroll-view>
+    </view>
+    <view v-if="cart.totalQuantity" class="cart-bar" @click="uni.switchTab({url:'/pages/cart/index'})"><view><text class="cart-count">{{ cart.totalQuantity }}</text><text>已选商品</text></view><text class="cart-total">¥{{ cart.totalPrice.toFixed(2) }}　去结算</text></view>
+  </view>
+</template>
+
+<style scoped lang="scss">
+.page{min-height:100vh}.hero{padding:90rpx 34rpx 36rpx;background:#123c2f;color:#fff;border-radius:0 0 40rpx 40rpx}.hero-top{display:flex;justify-content:space-between;align-items:center}.eyebrow,.title{display:block}.eyebrow{font-size:20rpx;letter-spacing:6rpx;color:#e5bd5a}.title{font-size:44rpx;font-weight:700;margin-top:14rpx}.avatar{width:72rpx;height:72rpx;border-radius:24rpx;background:#e5bd5a;color:#123c2f;display:grid;place-items:center;font-weight:700}.notice{margin-top:32rpx;background:rgba(255,255,255,.1);border-radius:18rpx;padding:18rpx 22rpx;font-size:24rpx}.content{display:flex;height:calc(100vh - 330rpx);padding-top:20rpx}.categories{width:190rpx;background:#eef1ee}.category{padding:30rpx 18rpx;color:#68746e;font-size:26rpx}.category.active{background:#fff;color:#123c2f;font-weight:700;border-left:8rpx solid #e5bd5a}.dishes{flex:1;background:#fff;padding:0 22rpx}.dish{display:flex;padding:24rpx 0;border-bottom:1rpx solid #edf0ee}.dish-image{width:176rpx;height:176rpx;border-radius:24rpx;background:#e7eee9;display:grid;place-items:center;color:#547064;overflow:hidden;flex-shrink:0}.dish-image image{width:100%;height:100%}.dish-info{flex:1;padding-left:20rpx;min-width:0}.dish-name{display:block;font-weight:700;font-size:30rpx}.dish-desc{display:block;color:#8a938e;font-size:22rpx;margin-top:12rpx;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dish-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:32rpx}.price{color:#d64d37;font-size:32rpx;font-weight:700}.add{margin:0;width:56rpx;height:56rpx;line-height:52rpx;border-radius:50%;background:#123c2f;color:#fff;padding:0}.cart-bar{position:fixed;left:30rpx;right:30rpx;bottom:120rpx;background:#17241f;color:#fff;border-radius:34rpx;padding:24rpx 30rpx;display:flex;justify-content:space-between;box-shadow:0 16rpx 40rpx rgba(0,0,0,.22)}.cart-count{background:#e5bd5a;color:#17241f;border-radius:50%;padding:4rpx 12rpx;margin-right:14rpx}.cart-total{color:#f4ca65;font-weight:700}
+</style>

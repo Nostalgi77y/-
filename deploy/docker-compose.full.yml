@@ -26,6 +26,9 @@ services:
       RABBITMQ_USERNAME: cloud_meal
       RABBITMQ_PASSWORD: cloud_meal_dev
       JWT_SECRET: change-this-production-secret-with-at-least-32-characters
+      FILE_UPLOAD_DIR: /data/cloud-meal/uploads
+    volumes:
+      - ./data/uploads:/data/cloud-meal/uploads
     depends_on:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }

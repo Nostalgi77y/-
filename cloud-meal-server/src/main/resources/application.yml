@@ -39,6 +39,7 @@ springdoc:
     path: /swagger-ui.html
 
 cloud-meal:
+  upload-dir: ${FILE_UPLOAD_DIR:./uploads}
   jwt:
     secret: ${JWT_SECRET:cloud-meal-dev-secret-key-change-before-production-2026}
     expiration: ${JWT_EXPIRATION:7200}

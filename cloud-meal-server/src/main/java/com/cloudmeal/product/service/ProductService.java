@@ -28,7 +28,7 @@ public class ProductService {
                 .eq(Category::getStatus, 1).orderByAsc(Category::getSort));
     }
 
-    @Cacheable(cacheNames = "dishes", key = "#categoryId ?: 'all'")
+    @Cacheable(cacheNames = "dishes-v2", key = "#categoryId ?: 'all'")
     public List<Dish> enabledDishes(Long categoryId) {
         return dishMapper.selectList(Wrappers.<Dish>lambdaQuery()
                 .eq(categoryId != null, Dish::getCategoryId, categoryId)
@@ -40,7 +40,7 @@ public class ProductService {
     }
 
     @Transactional
-    @CacheEvict(cacheNames = "dishes", allEntries = true)
+    @CacheEvict(cacheNames = "dishes-v2", allEntries = true)
     public Dish create(DishSaveRequest request) {
         if (categoryMapper.selectById(request.categoryId()) == null) {
             throw new BusinessException("CATEGORY_NOT_FOUND", "分类不存在");
@@ -51,7 +51,7 @@ public class ProductService {
     }
 
     @Transactional
-    @CacheEvict(cacheNames = "dishes", allEntries = true)
+    @CacheEvict(cacheNames = "dishes-v2", allEntries = true)
     public Dish update(Long id, DishSaveRequest request) {
         Dish existing = dishMapper.selectById(id);
         if (existing == null) throw new BusinessException("DISH_NOT_FOUND", "菜品不存在");

@@ -32,9 +32,13 @@ public class CartService {
         int target = request.quantity() + (existing == null ? 0 : existing.getQuantity());
         if (target > dish.getStock()) throw new BusinessException("STOCK_NOT_ENOUGH", "菜品库存不足");
         if (existing == null) {
-            ShoppingCart cart = new ShoppingCart(); cart.setUserId(userId); cart.setDishId(dish.getId());
-            cart.setDishName(dish.getName()); cart.setImage(dish.getImage()); cart.setUnitPrice(dish.getPrice());
-            cart.setQuantity(request.quantity()); cartMapper.insert(cart);
+            int restored = cartMapper.restoreDeleted(userId, dish.getId(), dish.getName(), dish.getImage(),
+                    dish.getPrice(), request.quantity());
+            if (restored == 0) {
+                ShoppingCart cart = new ShoppingCart(); cart.setUserId(userId); cart.setDishId(dish.getId());
+                cart.setDishName(dish.getName()); cart.setImage(dish.getImage()); cart.setUnitPrice(dish.getPrice());
+                cart.setQuantity(request.quantity()); cartMapper.insert(cart);
+            }
         } else {
             existing.setQuantity(target); cartMapper.updateById(existing);
         }
