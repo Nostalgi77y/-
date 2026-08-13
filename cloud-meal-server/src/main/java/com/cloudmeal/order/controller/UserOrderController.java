@@ -15,4 +15,5 @@ public class UserOrderController {
     @PostMapping public ApiResponse<OrderVO> submit(@Valid @RequestBody OrderSubmitRequest request) { return ApiResponse.success(service.submit(request)); }
     @GetMapping public ApiResponse<List<OrderVO>> list() { return ApiResponse.success(service.userOrders()); }
     @PostMapping("/{id}/mock-pay") public ApiResponse<Void> mockPay(@PathVariable Long id) { service.mockPay(id); return ApiResponse.success(); }
+    @DeleteMapping("/{id}") public ApiResponse<Void> delete(@PathVariable Long id) { service.hideForUser(id); return ApiResponse.success(); }
 }

@@ -97,7 +97,7 @@ public class OrderService {
         order.setStatus(OrderStatus.PENDING_PAYMENT.name()); order.setPayStatus("UNPAID");
         order.setOriginalAmount(total); order.setDiscountAmount(discount); order.setUserCouponId(request.userCouponId());
         order.setAmount(payable); order.setConsignee(address.getConsignee()); order.setPhone(address.getPhone());
-        order.setAddress(address.fullAddress()); order.setRemark(request.remark()); order.setVersion(0);
+        order.setAddress(address.fullAddress()); order.setRemark(request.remark()); order.setUserVisible(1); order.setVersion(0);
         orderMapper.insert(order);
         couponService.markUsed(request.userCouponId(), userId, order.getId());
 
@@ -120,8 +120,28 @@ public class OrderService {
     public List<OrderVO> userOrders() {
         Long userId = CurrentUser.id();
         return orderMapper.selectList(Wrappers.<Order>lambdaQuery().eq(Order::getUserId, userId)
+                        .eq(Order::getUserVisible, 1)
                         .orderByDesc(Order::getCreatedTime)).stream()
                 .map(o -> toVO(o, details(o.getId()))).toList();
+    }
+
+    @Transactional
+    public void hideForUser(Long id) {
+        Long userId = CurrentUser.id();
+        Order order = orderMapper.selectOne(Wrappers.<Order>lambdaQuery()
+                .eq(Order::getId, id).eq(Order::getUserId, userId).eq(Order::getUserVisible, 1));
+        if (order == null) throw new BusinessException("ORDER_NOT_FOUND", "订单不存在或已删除");
+        OrderStatus status = OrderStatus.valueOf(order.getStatus());
+        if (status != OrderStatus.COMPLETED && status != OrderStatus.CANCELLED) {
+            throw new BusinessException("ORDER_DELETE_NOT_ALLOWED", "进行中的订单不能删除");
+        }
+        Order update = new Order();
+        update.setId(id);
+        update.setUserVisible(0);
+        update.setVersion(order.getVersion());
+        if (orderMapper.updateById(update) != 1) {
+            throw new BusinessException("ORDER_DELETE_FAILED", "订单删除失败，请刷新后重试");
+        }
     }
 
     public List<OrderVO> adminOrders() {

@@ -26,5 +26,6 @@ public class Order extends BaseEntity {
     private String remark;
     private LocalDateTime paymentTime;
     private String cancelReason;
+    private Integer userVisible;
     @Version private Integer version;
 }
