@@ -16,6 +16,9 @@ public class Order extends BaseEntity {
     private Long addressBookId;
     private String status;
     private String payStatus;
+    private String paymentChannel;
+    private String transactionId;
+    private String prepayId;
     private BigDecimal originalAmount;
     private BigDecimal discountAmount;
     private Long userCouponId;

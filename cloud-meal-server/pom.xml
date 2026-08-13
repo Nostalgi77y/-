@@ -18,6 +18,7 @@
         <jjwt.version>0.12.6</jjwt.version>
         <mybatis-plus.version>3.5.12</mybatis-plus.version>
         <springdoc.version>2.8.9</springdoc.version>
+        <wechatpay-java.version>0.2.17</wechatpay-java.version>
     </properties>
     <dependencies>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
@@ -34,6 +35,7 @@
         <dependency><groupId>io.jsonwebtoken</groupId><artifactId>jjwt-impl</artifactId><version>${jjwt.version}</version><scope>runtime</scope></dependency>
         <dependency><groupId>io.jsonwebtoken</groupId><artifactId>jjwt-jackson</artifactId><version>${jjwt.version}</version><scope>runtime</scope></dependency>
         <dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>${springdoc.version}</version></dependency>
+        <dependency><groupId>com.github.wechatpay-apiv3</groupId><artifactId>wechatpay-java</artifactId><version>${wechatpay-java.version}</version></dependency>
         <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
         <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-test</artifactId><scope>test</scope></dependency>

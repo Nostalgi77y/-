@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user'
 const user=useUserStore()
-async function ensureLogin(){ if(!user.isLoggedIn) await user.demoLogin() }
+async function ensureLogin(){ if(!user.isLoggedIn) await user.login() }
 async function go(url:string){ await ensureLogin(); uni.navigateTo({url}) }
 </script>
 <template>
   <view class="mine">
-    <view class="profile"><view class="avatar">膳</view><view><text class="name">{{user.name}}</text><text class="sub">{{user.isLoggedIn?'已登录':'登录后享受完整服务'}}</text></view><button v-if="!user.isLoggedIn" @click="user.demoLogin">演示登录</button></view>
+    <view class="profile"><view class="avatar">膳</view><view><text class="name">{{user.name}}</text><text class="sub">{{user.isLoggedIn?'已登录':'登录后享受完整服务'}}</text></view><button v-if="!user.isLoggedIn" @click="user.login">微信登录</button></view>
     <view class="panel">
       <view @click="go('/pages/address/index')">收货地址<text>›</text></view>
       <view @click="go('/pages/coupon/index')">我的优惠券<text>›</text></view>

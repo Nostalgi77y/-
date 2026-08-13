@@ -21,6 +21,7 @@ import com.cloudmeal.product.mapper.DishMapper;
 import com.cloudmeal.product.entity.Dish;
 import com.cloudmeal.user.entity.AddressBook;
 import com.cloudmeal.user.mapper.AddressBookMapper;
+import com.cloudmeal.payment.service.PaymentService;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,17 +47,19 @@ public class OrderService {
     private final boolean messagingEnabled;
     private final CouponService couponService;
     private final UserCouponMapper userCouponMapper;
+    private final PaymentService paymentService;
 
     public OrderService(OrderMapper orderMapper, OrderDetailMapper detailMapper, ShoppingCartMapper cartMapper,
                         DishMapper dishMapper, AddressBookMapper addressMapper, RabbitTemplate rabbitTemplate,
                         OrderNotificationHandler notifier,
-                        CouponService couponService, UserCouponMapper userCouponMapper,
+                        CouponService couponService, UserCouponMapper userCouponMapper, PaymentService paymentService,
                         @Value("${cloud-meal.messaging.enabled:true}") boolean messagingEnabled) {
         this.orderMapper = orderMapper; this.detailMapper = detailMapper; this.cartMapper = cartMapper;
         this.dishMapper = dishMapper; this.addressMapper = addressMapper; this.rabbitTemplate = rabbitTemplate;
         this.notifier = notifier;
         this.couponService = couponService;
         this.userCouponMapper = userCouponMapper;
+        this.paymentService = paymentService;
         this.messagingEnabled = messagingEnabled;
     }
 
@@ -156,17 +159,6 @@ public class OrderService {
     }
 
     @Transactional
-    public void mockPay(Long id) {
-        Long userId = CurrentUser.id();
-        Order order = orderMapper.selectOne(Wrappers.<Order>lambdaQuery().eq(Order::getId, id).eq(Order::getUserId, userId));
-        if (order == null) throw new BusinessException("ORDER_NOT_FOUND", "订单不存在");
-        if (orderMapper.markPaid(id, userId) != 1) {
-            throw new BusinessException("ORDER_STATUS_INVALID", "当前订单不能支付");
-        }
-        notifier.broadcast("ORDER_PAID", id, "订单已支付，请及时接单");
-    }
-
-    @Transactional
     public void transition(Long id, OrderStatus target) {
         Order order = orderMapper.selectById(id);
         if (order == null) throw new BusinessException("ORDER_NOT_FOUND", "订单不存在");
@@ -179,6 +171,9 @@ public class OrderService {
 
     @Transactional
     public void closeIfUnpaid(Long id) {
+        Order pending = orderMapper.selectById(id);
+        if (pending == null || !OrderStatus.PENDING_PAYMENT.name().equals(pending.getStatus())) return;
+        if (paymentService.settleOrCloseForTimeout(pending)) return;
         if (orderMapper.transition(id, OrderStatus.PENDING_PAYMENT.name(), OrderStatus.CANCELLED.name()) == 1) {
             for (OrderDetail detail : details(id)) {
                 dishMapper.restoreStock(detail.getDishId(), detail.getQuantity());

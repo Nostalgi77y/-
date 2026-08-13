@@ -12,10 +12,15 @@ public interface OrderMapper extends BaseMapper<Order> {
             "WHERE id=#{id} AND status=#{expected} AND deleted=0")
     int transition(@Param("id") Long id, @Param("expected") String expected, @Param("target") String target);
 
-    @Update("UPDATE orders SET status='PENDING_ACCEPTANCE', pay_status='PAID', payment_time=NOW(), " +
-            "updated_time=NOW(), version=version+1 WHERE id=#{id} AND user_id=#{userId} " +
-            "AND status='PENDING_PAYMENT' AND pay_status='UNPAID' AND deleted=0")
-    int markPaid(@Param("id") Long id, @Param("userId") Long userId);
+    @Update("UPDATE orders SET status='PENDING_ACCEPTANCE', pay_status='PAID', payment_channel=#{channel}, " +
+            "transaction_id=#{transactionId}, payment_time=NOW(), updated_time=NOW(), version=version+1 " +
+            "WHERE order_number=#{orderNumber} AND status='PENDING_PAYMENT' AND pay_status='UNPAID' AND deleted=0")
+    int markPaidByOrderNumber(@Param("orderNumber") String orderNumber, @Param("channel") String channel,
+                              @Param("transactionId") String transactionId);
+
+    @Update("UPDATE orders SET payment_channel=#{channel}, prepay_id=#{prepayId}, updated_time=NOW() " +
+            "WHERE id=#{id} AND status='PENDING_PAYMENT' AND pay_status='UNPAID' AND deleted=0")
+    int recordPrepay(@Param("id") Long id, @Param("channel") String channel, @Param("prepayId") String prepayId);
 
     @Select("SELECT COALESCE(SUM(amount),0) FROM orders WHERE pay_status='PAID' AND DATE(created_time)=CURRENT_DATE AND deleted=0")
     BigDecimal todayRevenue();

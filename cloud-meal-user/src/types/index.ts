@@ -7,3 +7,4 @@ export interface Coupon { id:string; name:string; thresholdAmount:number; discou
 export interface UserCoupon { userCouponId:string; couponId:string; name:string; thresholdAmount:number; discountAmount:number; validUntil:string; status:string; usable:boolean }
 export interface OrderDetail { id:string; name:string; unitPrice:number; quantity:number; amount:number }
 export interface Order { id:string; orderNumber:string; status:string; payStatus:string; originalAmount:number; discountAmount:number; amount:number; consignee:string; address:string; createdTime:string; details:OrderDetail[] }
+export interface PaymentCreate { mode:'MOCK'|'FREE'|'WECHAT'; status:'PAID'|'PENDING'; appId?:string; timeStamp?:string; nonceStr?:string; packageValue?:string; signType?:string; paySign?:string }

@@ -4,6 +4,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import { request } from '@/utils/request'
+import { payOrder } from '@/utils/payment'
 import type { Address, Order, UserCoupon } from '@/types'
 
 const cart=useCartStore();const user=useUserStore();const addresses=ref<Address[]>([]);const coupons=ref<UserCoupon[]>([])
@@ -11,7 +12,7 @@ const selectedAddress=ref<Address>();const selectedCoupon=ref<UserCoupon>();cons
 const discount=computed(()=>selectedCoupon.value?.discountAmount||0);const payable=computed(()=>Math.max(0,cart.totalPrice-discount.value))
 
 async function loadCheckout(){
-  if(!user.isLoggedIn) await user.demoLogin()
+  if(!user.isLoggedIn) await user.login()
   await cart.load()
   addresses.value=await request<Address[]>({url:'/user/addresses',method:'GET'})
   selectedAddress.value=addresses.value.find(item=>item.isDefault===1)||addresses.value[0]
@@ -24,7 +25,7 @@ async function checkout(){
   if(!cart.items.length)return
   if(!selectedAddress.value){uni.showModal({title:'缺少收货地址',content:'请先新增收货地址',success:r=>{if(r.confirm)uni.navigateTo({url:'/pages/address/index'})}});return}
   const order=await request<Order>({url:'/user/orders',method:'POST',data:{clientOrderNo:`uni-${Date.now()}`,addressBookId:selectedAddress.value.id,userCouponId:selectedCoupon.value?.userCouponId,remark:''}})
-  uni.showModal({title:'订单创建成功',content:`商品 ¥${order.originalAmount}，优惠 ¥${order.discountAmount}，应付 ¥${order.amount}。是否模拟支付？`,success:async result=>{if(result.confirm){await request<void>({url:`/user/orders/${order.id}/mock-pay`,method:'POST'});uni.switchTab({url:'/pages/order/index'})}}})
+  uni.showModal({title:'订单创建成功',content:`商品 ¥${order.originalAmount}，优惠 ¥${order.discountAmount}，应付 ¥${order.amount}。是否立即付款？`,confirmText:'立即付款',success:async result=>{if(result.confirm)await payOrder(order.id);uni.switchTab({url:'/pages/order/index'})}})
 }
 onShow(loadCheckout)
 </script>
