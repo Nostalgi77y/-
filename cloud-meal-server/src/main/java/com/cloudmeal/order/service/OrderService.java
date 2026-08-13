@@ -14,6 +14,9 @@ import com.cloudmeal.order.messaging.OrderMessageConfig;
 import com.cloudmeal.order.model.OrderStatus;
 import com.cloudmeal.order.vo.OrderVO;
 import com.cloudmeal.notification.OrderNotificationHandler;
+import com.cloudmeal.marketing.entity.Coupon;
+import com.cloudmeal.marketing.mapper.UserCouponMapper;
+import com.cloudmeal.marketing.service.CouponService;
 import com.cloudmeal.product.mapper.DishMapper;
 import com.cloudmeal.product.entity.Dish;
 import com.cloudmeal.user.entity.AddressBook;
@@ -41,14 +44,19 @@ public class OrderService {
     private final RabbitTemplate rabbitTemplate;
     private final OrderNotificationHandler notifier;
     private final boolean messagingEnabled;
+    private final CouponService couponService;
+    private final UserCouponMapper userCouponMapper;
 
     public OrderService(OrderMapper orderMapper, OrderDetailMapper detailMapper, ShoppingCartMapper cartMapper,
                         DishMapper dishMapper, AddressBookMapper addressMapper, RabbitTemplate rabbitTemplate,
                         OrderNotificationHandler notifier,
+                        CouponService couponService, UserCouponMapper userCouponMapper,
                         @Value("${cloud-meal.messaging.enabled:true}") boolean messagingEnabled) {
         this.orderMapper = orderMapper; this.detailMapper = detailMapper; this.cartMapper = cartMapper;
         this.dishMapper = dishMapper; this.addressMapper = addressMapper; this.rabbitTemplate = rabbitTemplate;
         this.notifier = notifier;
+        this.couponService = couponService;
+        this.userCouponMapper = userCouponMapper;
         this.messagingEnabled = messagingEnabled;
     }
 
@@ -79,13 +87,19 @@ public class OrderService {
             total = total.add(currentDish.getPrice().multiply(BigDecimal.valueOf(cart.getQuantity())));
         }
 
+        Coupon coupon = couponService.validateForOrder(request.userCouponId(), userId, total);
+        BigDecimal discount = coupon == null ? BigDecimal.ZERO : coupon.getDiscountAmount().min(total);
+        BigDecimal payable = total.subtract(discount);
+
         Order order = new Order();
         order.setOrderNumber(generateOrderNumber()); order.setClientOrderNo(request.clientOrderNo());
         order.setUserId(userId); order.setAddressBookId(address.getId());
         order.setStatus(OrderStatus.PENDING_PAYMENT.name()); order.setPayStatus("UNPAID");
-        order.setAmount(total); order.setConsignee(address.getConsignee()); order.setPhone(address.getPhone());
+        order.setOriginalAmount(total); order.setDiscountAmount(discount); order.setUserCouponId(request.userCouponId());
+        order.setAmount(payable); order.setConsignee(address.getConsignee()); order.setPhone(address.getPhone());
         order.setAddress(address.fullAddress()); order.setRemark(request.remark()); order.setVersion(0);
         orderMapper.insert(order);
+        couponService.markUsed(request.userCouponId(), userId, order.getId());
 
         for (ShoppingCart cart : carts) {
             Dish currentDish = currentDishes.get(cart.getDishId());
@@ -149,6 +163,8 @@ public class OrderService {
             for (OrderDetail detail : details(id)) {
                 dishMapper.restoreStock(detail.getDishId(), detail.getQuantity());
             }
+            Order order = orderMapper.selectById(id);
+            if (order != null && order.getUserCouponId() != null) userCouponMapper.release(order.getUserCouponId(), id);
         }
     }
 
@@ -156,7 +172,8 @@ public class OrderService {
         return detailMapper.selectList(Wrappers.<OrderDetail>lambdaQuery().eq(OrderDetail::getOrderId, orderId));
     }
     private OrderVO toVO(Order order, List<OrderDetail> details) {
-        return new OrderVO(order.getId(), order.getOrderNumber(), order.getStatus(), order.getPayStatus(), order.getAmount(),
+        return new OrderVO(order.getId(), order.getOrderNumber(), order.getStatus(), order.getPayStatus(),
+                order.getOriginalAmount(), order.getDiscountAmount(), order.getAmount(),
                 order.getConsignee(), order.getPhone(), order.getAddress(), order.getRemark(), order.getCreatedTime(), details);
     }
     private String generateOrderNumber() {

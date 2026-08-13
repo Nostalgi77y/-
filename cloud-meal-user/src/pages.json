@@ -3,7 +3,9 @@
     { "path": "pages/menu/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/cart/index", "style": { "navigationBarTitleText": "购物车" } },
     { "path": "pages/order/index", "style": { "navigationBarTitleText": "我的订单" } },
-    { "path": "pages/mine/index", "style": { "navigationBarTitleText": "个人中心" } }
+    { "path": "pages/mine/index", "style": { "navigationBarTitleText": "个人中心" } },
+    { "path": "pages/address/index", "style": { "navigationBarTitleText": "收货地址" } },
+    { "path": "pages/coupon/index", "style": { "navigationBarTitleText": "优惠券" } }
   ],
   "tabBar": {
     "color": "#7a837f", "selectedColor": "#146c4b", "backgroundColor": "#ffffff",

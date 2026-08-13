@@ -4,10 +4,10 @@ import { request } from '@/utils/request'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import type { Category, Dish } from '@/types'
-const categories=ref<Category[]>([]);const dishes=ref<Dish[]>([]);const active=ref<number>();const cart=useCartStore();const user=useUserStore()
+const categories=ref<Category[]>([]);const dishes=ref<Dish[]>([]);const active=ref<string>();const cart=useCartStore();const user=useUserStore()
 async function loadCategories(){categories.value=await request<Category[]>({url:'/user/categories',method:'GET'});if(categories.value.length)selectCategory(categories.value[0].id)}
-async function selectCategory(id:number){active.value=id;dishes.value=await request<Dish[]>({url:`/user/dishes?categoryId=${id}`,method:'GET'})}
-async function add(id:number){if(!user.isLoggedIn)await user.demoLogin();await cart.add(id);uni.showToast({title:'已加入购物车'})}
+async function selectCategory(id:string){active.value=id;dishes.value=await request<Dish[]>({url:`/user/dishes?categoryId=${id}`,method:'GET'})}
+async function add(id:string){if(!user.isLoggedIn)await user.demoLogin();await cart.add(id);uni.showToast({title:'已加入购物车'})}
 onMounted(loadCategories)
 </script>
 <template><view class="page"><view class="hero"><view class="hero-top"><view><text class="eyebrow">CLOUD MEAL</text><text class="title">今天想吃点什么？</text></view><view class="avatar">膳</view></view><view class="notice">营业中 · 预计 30 分钟送达</view></view><view class="content"><scroll-view class="categories" scroll-y><view v-for="item in categories" :key="item.id" class="category" :class="{active:item.id===active}" @click="selectCategory(item.id)">{{item.name}}</view></scroll-view><scroll-view class="dishes" scroll-y><view v-for="dish in dishes" :key="dish.id" class="dish"><view class="dish-image"><image v-if="dish.image" :src="dish.image" mode="aspectFill"/><text v-else>云膳</text></view><view class="dish-info"><text class="dish-name">{{dish.name}}</text><text class="dish-desc">{{dish.description}}</text><view class="dish-bottom"><text class="price">¥{{dish.price}}</text><button class="add" @click="add(dish.id)">+</button></view></view></view></scroll-view></view><view v-if="cart.totalQuantity" class="cart-bar" @click="uni.switchTab({url:'/pages/cart/index'})"><view><text class="cart-count">{{cart.totalQuantity}}</text><text>已选商品</text></view><text class="cart-total">¥{{cart.totalPrice.toFixed(2)}}　去结算</text></view></view></template>

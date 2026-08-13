@@ -41,6 +41,8 @@ public class CartService {
     }
 
     public void clear() {
-        cartMapper.delete(Wrappers.<ShoppingCart>lambdaQuery().eq(ShoppingCart::getUserId, CurrentUser.id()));
+        // Shopping-cart rows are temporary data. A physical delete also releases the
+        // (user_id, dish_id) unique key so the same dish can be added again later.
+        cartMapper.deleteAllByUserId(CurrentUser.id());
     }
 }
